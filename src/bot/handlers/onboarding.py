@@ -7,6 +7,7 @@ from src.bot.states import OnboardingStates
 
 router = Router()
 
+
 @router.message(StateFilter(OnboardingStates.waiting_for_name), F.text)
 async def process_name(message: types.Message, state: FSMContext):
     """
@@ -16,13 +17,22 @@ async def process_name(message: types.Message, state: FSMContext):
     telegram_id = message.from_user.id
 
     # Update user's name
-    user = await User.get(telegram_id=telegram_id)
-    user.first_name = name
-    await user.save()
+    user = await User.get_or_none(telegram_id=telegram_id)
+    if not user:
+        # Should not happen if flow is correct, but safety first
+        user = await User.create(
+            telegram_id=telegram_id,
+            username=message.from_user.username,
+            first_name=name,
+        )
+    else:
+        user.first_name = name
+        await user.save()
 
     await message.answer(
         f"Приятно познакомиться, {name}!\n\n"
-        "Какая у тебя сейчас главная цель? (Напиши кратко, например: 'Выучить английский' или 'Похудеть на 5 кг')"
+        "Какая у тебя сейчас главная цель? "
+        "(Напиши кратко, например: 'Выучить английский' или 'Похудеть на 5 кг')"
     )
     await state.set_state(OnboardingStates.waiting_for_main_goal)
 
@@ -35,14 +45,18 @@ async def process_main_goal(message: types.Message, state: FSMContext):
     goal_title = message.text.strip()
     telegram_id = message.from_user.id
 
-    user = await User.get(telegram_id=telegram_id)
-    
+    user = await User.get_or_none(telegram_id=telegram_id)
+    if not user:
+        await message.answer("Произошла ошибка: пользователь не найден. Нажми /start")
+        await state.clear()
+        return
+
     # Create the first goal
     await Goal.create(
         user=user,
         title=goal_title,
         description=f"Главная цель: {goal_title}",
-        status="active"
+        status="active",
     )
 
     await message.answer(
@@ -52,4 +66,3 @@ async def process_main_goal(message: types.Message, state: FSMContext):
         "2. Сделать чек-ин через /checkin"
     )
     await state.clear()
-

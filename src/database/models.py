@@ -34,6 +34,7 @@ class CheckIn(models.Model):
     goal = fields.ForeignKeyField("models.Goal", related_name="checkins")
     date = fields.DatetimeField(auto_now_add=True)
     report_text = fields.TextField()
+    image_base64 = fields.TextField(null=True)
     ai_feedback = fields.TextField(null=True)
 
     class Meta:

@@ -7,6 +7,7 @@ from src.bot.states import OnboardingStates
 
 router = Router()
 
+
 @router.message(CommandStart())
 async def cmd_start(message: types.Message, state: FSMContext):
     """
@@ -21,19 +22,23 @@ async def cmd_start(message: types.Message, state: FSMContext):
     user = await User.get_or_none(telegram_id=telegram_id)
 
     if not user:
-        # Create new user
+        # Create new user immediately to store basic info
+        # We will update the name later during onboarding if they provide a different,
+        # or just use what we have if they drop off.
         user = await User.create(
-            telegram_id=telegram_id,
-            username=username,
-            first_name=first_name
+            telegram_id=telegram_id, username=username, first_name=first_name
         )
         await message.answer(
-            f"Привет, {first_name}! Я твой AI-коуч.\n"
+            f"Привет, {first_name or 'друг'}! Я твой AI-коуч.\n"
             "Давай познакомимся. Как мне тебя называть?"
         )
         await state.set_state(OnboardingStates.waiting_for_name)
     else:
+        # Clear any previous state to avoid getting stuck
+        await state.clear()
+
+        display_name = user.first_name or message.from_user.first_name or "друг"
         await message.answer(
-            f"С возвращением, {user.first_name}!\n"
+            f"С возвращением, {display_name}!\n"
             "Используй /new_goal чтобы поставить новую цель, или /checkin для отчета."
         )
