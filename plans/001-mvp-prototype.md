@@ -8,8 +8,8 @@
 Цель: Убедиться, что бот запускается, отвечает на команды и деплоится.
 
 1.  **Инициализация:**
-    - [ ] Настройка `poetry` / `requirements.txt`: `aiogram`, `tortoise-orm`, `aiosqlite`, `aerich`, `openai`, `pydantic-settings`, `tenacity` (для retry).
-    - [ ] Конфиг `src/config.py`: чтение `.env` (BOT_TOKEN, OPENAI_KEY).
+    - [x] Настройка `poetry` / `requirements.txt`: `aiogram`, `tortoise-orm`, `aiosqlite`, `aerich`, `openai`, `pydantic-settings`, `tenacity` (для retry).
+    - [x] Конфиг `src/config.py`: чтение `.env` (BOT_TOKEN, OPENAI_KEY).
 2.  **Минимальный Бот:**
     - [ ] `src/main.py`: Запуск поллинга.
     - [ ] `src/bot/handlers/start.py`: Простой хендлер `/start` -> "Бот работает".
