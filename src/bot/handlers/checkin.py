@@ -64,7 +64,7 @@ async def process_goal_selection(callback: types.CallbackQuery, state: FSMContex
     # AICODE-NOTE: Prevent IDOR by filtering by user__telegram_id
     # Verify goal exists and belongs to user (security check)
     goal = await Goal.get_or_none(id=goal_id, user__telegram_id=callback.from_user.id)
-    
+
     if not goal:
         await callback.message.answer("Цель не найдена или у вас нет прав.")
         await state.clear()
@@ -77,14 +77,20 @@ async def process_goal_selection(callback: types.CallbackQuery, state: FSMContex
     try:
         await callback.message.edit_text(
             f"Отлично! Как успехи с целью **{goal.title}**?\n\n"
-            "Напиши отчет текстом или пришли фото (можно с подписью)."
+            "Напиши отчет текстом или пришли фото (можно с подписью).",
+            reply_markup=None,
         )
     except Exception:
         await callback.message.answer(
             f"Отлично! Как успехи с целью **{goal.title}**?\n\n"
             "Напиши отчет текстом или пришли фото (можно с подписью)."
         )
-        
+        # Try to remove buttons from the old message if possible
+        try:
+            await callback.message.edit_reply_markup(reply_markup=None)
+        except Exception:
+            pass
+
     await state.set_state(CheckInStates.waiting_for_report)
     await callback.answer()
 
@@ -94,7 +100,7 @@ async def process_report(message: types.Message, state: FSMContext):
     """Handle the report (text or photo)."""
     data = await state.get_data()
     goal_id = data.get("goal_id")
-    
+
     # Validate goal_id exists
     if not goal_id:
         await message.answer("Что-то пошло не так. Начни чек-ин заново через /checkin")
@@ -103,7 +109,10 @@ async def process_report(message: types.Message, state: FSMContext):
 
     goal = await Goal.get_or_none(id=goal_id, user__telegram_id=message.from_user.id)
     if not goal:
-        await message.answer("Цель не найдена или у вас нет прав. Попробуй выбрать заново через /checkin")
+        await message.answer(
+            "Цель не найдена или у вас нет прав. "
+            "Попробуй выбрать заново через /checkin"
+        )
         await state.clear()
         return
 
@@ -120,9 +129,11 @@ async def process_report(message: types.Message, state: FSMContext):
             report_text = message.caption or "[Фото отчет]"
         except Exception as e:
             logger.error(f"Failed to download photo: {e}")
-            await message.answer("Не удалось загрузить фото. Пожалуйста, отправь отчет текстом.")
+            await message.answer(
+                "Не удалось загрузить фото. Пожалуйста, отправь отчет текстом."
+            )
             return
-            
+
     # Handle Text
     elif message.text:
         report_text = message.text
