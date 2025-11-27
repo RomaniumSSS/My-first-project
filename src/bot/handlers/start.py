@@ -37,4 +37,3 @@ async def cmd_start(message: types.Message, state: FSMContext):
             f"С возвращением, {user.first_name}!\n"
             "Используй /new_goal чтобы поставить новую цель, или /checkin для отчета."
         )
-
