@@ -20,14 +20,14 @@
 Переход на SQLite для простоты развертывания.
 
 1.  **Настройка Tortoise ORM:**
-    - [ ] Конфигурация на файл `db.sqlite3`.
-    - [ ] Инициализация `Aerich` для миграций.
+    - [x] Конфигурация на файл `db.sqlite3`.
+    - [x] Инициализация `Aerich` для миграций.
 2.  **Модели (`src/database/models.py`):**
-    - [ ] **User**: `telegram_id`, `username`, `first_name`, `created_at`.
-    - [ ] **Goal**: `user_id`, `title`, `description`, `image_base64` (TextField, храним контент для анализа), `status`, `created_at`.
-    - [ ] **CheckIn**: `goal_id`, `date`, `report_text`, `ai_feedback` (убран `mood_score`).
+    - [x] **User**: `telegram_id`, `username`, `first_name`, `created_at`.
+    - [x] **Goal**: `user_id`, `title`, `description`, `image_base64` (TextField, храним контент для анализа), `status`, `created_at`.
+    - [x] **CheckIn**: `goal_id`, `date`, `report_text`, `ai_feedback` (убран `mood_score`).
 3.  **Миграции:**
-    - [ ] Создание и применение первой схемы.
+    - [x] Создание и применение первой схемы.
 
 ## Этап 2: AI-Сервис (Core + Reliability)
 Реализация "мозга" с учетом отказоустойчивости.
