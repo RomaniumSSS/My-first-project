@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Any
 
 from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
