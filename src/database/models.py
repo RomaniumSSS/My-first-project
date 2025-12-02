@@ -7,6 +7,11 @@ class User(models.Model):
     username = fields.CharField(max_length=255, null=True)
     first_name = fields.CharField(max_length=255, null=True)
     created_at = fields.DatetimeField(auto_now_add=True)
+    
+    # AICODE-NOTE: Режим пользователя для поддержки кризисных состояний
+    # Возможные значения: normal, crisis, burnout, uncertainty
+    current_mode = fields.CharField(max_length=20, default="normal")
+    mode_updated_at = fields.DatetimeField(null=True)
 
     goals: fields.ReverseRelation["Goal"]
 

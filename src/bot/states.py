@@ -15,3 +15,12 @@ class GoalSettingStates(StatesGroup):
 class CheckInStates(StatesGroup):
     waiting_for_goal_selection = State()
     waiting_for_report = State()
+
+
+class CrisisStates(StatesGroup):
+    """FSM состояния для режима кризиса."""
+    waiting_for_feeling = State()   # Ожидание ответа "как ты?"
+    breathing = State()              # Режим дыхательной паузы
+    micro_action = State()           # Предложение микро-действия
+    just_being = State()             # Просто рядом, без действий
+    waiting_for_micro_report = State()  # Ожидание отчёта о микро-действии

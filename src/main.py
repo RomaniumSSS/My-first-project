@@ -10,7 +10,7 @@ from tortoise import Tortoise
 
 from src.config import config
 from src.database.config import TORTOISE_ORM
-from src.bot.handlers import start, onboarding, goal_setting, checkin
+from src.bot.handlers import start, onboarding, goal_setting, checkin, crisis
 
 # Configure logging
 logging.basicConfig(
@@ -71,6 +71,7 @@ async def main():
     dp.include_router(onboarding.router)
     dp.include_router(goal_setting.router)
     dp.include_router(checkin.router)
+    dp.include_router(crisis.router)
 
     # Database setup
     await init_db()

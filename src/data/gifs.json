@@ -1,0 +1,23 @@
+{
+  "support": {
+    "description": "Поддержка, обнимашки, 'я рядом'",
+    "gifs": []
+  },
+  "breathe": {
+    "description": "Спокойствие, природа, медитация",
+    "gifs": []
+  },
+  "celebration_small": {
+    "description": "Маленькие победы, мягкое празднование",
+    "gifs": []
+  },
+  "you_got_this": {
+    "description": "Мотивация, 'ты справишься'",
+    "gifs": []
+  },
+  "rest": {
+    "description": "Отдых, 'можно не делать ничего'",
+    "gifs": []
+  }
+}
+
