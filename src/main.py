@@ -4,7 +4,7 @@ import sys
 from typing import Callable, Dict, Any, Awaitable
 
 from aiogram import Bot, Dispatcher, BaseMiddleware
-from aiogram.types import Message, TelegramObject, CallbackQuery, BotCommand
+from aiogram.types import Message, TelegramObject, CallbackQuery, BotCommand, ErrorEvent
 from aiogram.fsm.storage.memory import MemoryStorage
 from tortoise import Tortoise
 
@@ -34,7 +34,8 @@ class WhitelistMiddleware(BaseMiddleware):
         if user and config.ALLOWED_USER_IDS:
             if user.id not in config.ALLOWED_USER_IDS:
                 logger.warning(
-                    f"Unauthorized access attempt from user {user.id} (@{user.username})"
+                    f"Unauthorized access attempt from user {user.id} "
+                    f"(@{user.username})"
                 )
                 # We can silently ignore or send a message.
                 # For messages, we can reply.
@@ -88,6 +89,39 @@ async def main():
     dp.include_router(checkin.router)
     dp.include_router(crisis.router)
     dp.include_router(reflect.router)
+
+    # Global error handler
+    @dp.error()
+    async def global_error_handler(event: ErrorEvent):
+        """
+        Глобальный обработчик ошибок.
+        Логирует все необработанные исключения и уведомляет пользователя.
+        """
+        logger.error(
+            "Critical error caused by %s: %s",
+            type(event.exception).__name__,
+            event.exception,
+            exc_info=event.exception,
+        )
+
+        # Пытаемся уведомить пользователя
+        update = event.update
+        error_message = (
+            "😔 Произошла ошибка. Попробуй ещё раз или напиши /start для перезапуска."
+        )
+
+        try:
+            if update.message:
+                await update.message.answer(error_message)
+            elif update.callback_query:
+                await update.callback_query.answer(
+                    "Произошла ошибка. Попробуй ещё раз.", show_alert=True
+                )
+        except Exception as notify_error:
+            logger.warning(f"Failed to notify user about error: {notify_error}")
+
+        # Возвращаем True чтобы aiogram не перебрасывал исключение дальше
+        return True
 
     # Database setup
     await init_db()

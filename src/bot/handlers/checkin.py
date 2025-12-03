@@ -1,10 +1,11 @@
 import logging
-from aiogram import Router, F, types
+from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from src.bot.states import CheckInStates
+from src.bot.callbacks import MenuCallback, CheckinCallback
 from src.database.models import Goal, CheckIn, User
 from src.services.ai import ai_service
 from src.services.vision import (
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 def get_back_to_menu_keyboard():
     """Кнопка возврата в меню."""
     builder = InlineKeyboardBuilder()
-    builder.button(text="📋 Меню", callback_data="back_to_menu")
+    builder.button(text="📋 Меню", callback_data=MenuCallback(action="back"))
     return builder.as_markup()
 
 
@@ -47,8 +48,8 @@ async def cmd_checkin(message: types.Message, state: FSMContext):
 
     builder = InlineKeyboardBuilder()
     for goal in goals:
-        # callback_data limit is 64 bytes. goal_id is int, should be fine.
-        builder.button(text=goal.title, callback_data=f"checkin_goal_{goal.id}")
+        # Используем типизированный CallbackData
+        builder.button(text=goal.title, callback_data=CheckinCallback(goal_id=goal.id))
 
     builder.adjust(1)
 
@@ -57,16 +58,13 @@ async def cmd_checkin(message: types.Message, state: FSMContext):
 
 
 @router.callback_query(
-    CheckInStates.waiting_for_goal_selection, F.data.startswith("checkin_goal_")
+    CheckInStates.waiting_for_goal_selection, CheckinCallback.filter()
 )
-async def process_goal_selection(callback: types.CallbackQuery, state: FSMContext):
+async def process_goal_selection(
+    callback: types.CallbackQuery, callback_data: CheckinCallback, state: FSMContext
+):
     """Handle goal selection."""
-    try:
-        goal_id = int(callback.data.split("_")[-1])
-    except ValueError:
-        await callback.message.answer("Некорректный ID цели.")
-        await state.clear()
-        return
+    goal_id = callback_data.goal_id
 
     # AICODE-NOTE: Prevent IDOR by filtering by user__telegram_id
     # Verify goal exists and belongs to user (security check)
@@ -211,8 +209,7 @@ async def process_report(message: types.Message, state: FSMContext):
         pass  # Ignore deletion errors to ensure state is cleared
 
     await message.answer(
-        f"✅ Записано!\n\n{ai_feedback}",
-        reply_markup=get_back_to_menu_keyboard()
+        f"✅ Записано!\n\n{ai_feedback}", reply_markup=get_back_to_menu_keyboard()
     )
 
     await state.clear()

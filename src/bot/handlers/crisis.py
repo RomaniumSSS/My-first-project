@@ -21,6 +21,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from src.bot.states import CrisisStates
+from src.bot.callbacks import CrisisCallback
 from src.database.models import User, Goal
 from src.data.mantras import get_random_mantra
 from src.services.gif_service import gif_service
@@ -52,9 +53,11 @@ async def send_gif_if_available(
 def get_crisis_menu_keyboard():
     """Клавиатура главного меню кризис-режима."""
     builder = InlineKeyboardBuilder()
-    builder.button(text="🌬 Подышать", callback_data="crisis_breathe")
-    builder.button(text="💬 Написать", callback_data="crisis_talk")
-    builder.button(text="🤫 Просто побыть", callback_data="crisis_just_be")
+    builder.button(text="🌬 Подышать", callback_data=CrisisCallback(action="breathe"))
+    builder.button(text="💬 Написать", callback_data=CrisisCallback(action="talk"))
+    builder.button(
+        text="🤫 Просто побыть", callback_data=CrisisCallback(action="just_be")
+    )
     builder.adjust(3)
     return builder.as_markup()
 
@@ -62,8 +65,12 @@ def get_crisis_menu_keyboard():
 def get_post_breathing_keyboard():
     """Клавиатура после дыхательной паузы — с опцией микро-действия."""
     builder = InlineKeyboardBuilder()
-    builder.button(text="🎯 Микро-действие", callback_data="crisis_micro_action")
-    builder.button(text="🤫 Просто побыть", callback_data="crisis_just_be")
+    builder.button(
+        text="🎯 Микро-действие", callback_data=CrisisCallback(action="micro")
+    )
+    builder.button(
+        text="🤫 Просто побыть", callback_data=CrisisCallback(action="just_be")
+    )
     builder.adjust(2)
     return builder.as_markup()
 
@@ -71,8 +78,12 @@ def get_post_breathing_keyboard():
 def get_breathing_choice_keyboard():
     """Выбор дыхательной техники."""
     builder = InlineKeyboardBuilder()
-    builder.button(text="🌬 4-7-8 (глубокое)", callback_data="breathe_478")
-    builder.button(text="⬜ Box 4-4-4-4 (простое)", callback_data="breathe_box")
+    builder.button(
+        text="🌬 4-7-8 (глубокое)", callback_data=CrisisCallback(action="b478")
+    )
+    builder.button(
+        text="⬜ Box 4-4-4-4 (простое)", callback_data=CrisisCallback(action="bbox")
+    )
     builder.adjust(1)
     return builder.as_markup()
 
@@ -80,8 +91,8 @@ def get_breathing_choice_keyboard():
 def get_breathing_repeat_keyboard():
     """Кнопки после дыхательной паузы."""
     builder = InlineKeyboardBuilder()
-    builder.button(text="🔄 Повторить", callback_data="breathe_repeat")
-    builder.button(text="✅ Достаточно", callback_data="breathe_done")
+    builder.button(text="🔄 Повторить", callback_data=CrisisCallback(action="brep"))
+    builder.button(text="✅ Достаточно", callback_data=CrisisCallback(action="bdone"))
     builder.adjust(2)
     return builder.as_markup()
 
@@ -89,8 +100,10 @@ def get_breathing_repeat_keyboard():
 def get_micro_action_keyboard():
     """Кнопки предложения микро-действия."""
     builder = InlineKeyboardBuilder()
-    builder.button(text="🎯 Хочу попробовать", callback_data="micro_try")
-    builder.button(text="🛋 Не сейчас", callback_data="micro_skip")
+    builder.button(
+        text="🎯 Хочу попробовать", callback_data=CrisisCallback(action="mtry")
+    )
+    builder.button(text="🛋 Не сейчас", callback_data=CrisisCallback(action="mskip"))
     builder.adjust(2)
     return builder.as_markup()
 
@@ -98,8 +111,12 @@ def get_micro_action_keyboard():
 def get_exit_crisis_keyboard():
     """Кнопки для выхода из режима кризиса."""
     builder = InlineKeyboardBuilder()
-    builder.button(text="✅ Да, переключить", callback_data="crisis_exit_yes")
-    builder.button(text="🔴 Нет, пока в кризисе", callback_data="crisis_exit_no")
+    builder.button(
+        text="✅ Да, переключить", callback_data=CrisisCallback(action="exit_y")
+    )
+    builder.button(
+        text="🔴 Нет, пока в кризисе", callback_data=CrisisCallback(action="exit_n")
+    )
     builder.adjust(2)
     return builder.as_markup()
 
@@ -149,7 +166,7 @@ async def _verify_crisis_mode(callback: types.CallbackQuery) -> bool:
     return True
 
 
-@router.callback_query(F.data == "crisis_breathe")
+@router.callback_query(CrisisCallback.filter(F.action == "breathe"))
 async def handle_breathe_choice(callback: types.CallbackQuery, state: FSMContext):
     """Пользователь хочет подышать — показываем выбор техники."""
     if not await _verify_crisis_mode(callback):
@@ -167,7 +184,7 @@ async def handle_breathe_choice(callback: types.CallbackQuery, state: FSMContext
     await callback.answer()
 
 
-@router.callback_query(F.data == "crisis_talk")
+@router.callback_query(CrisisCallback.filter(F.action == "talk"))
 async def handle_talk(callback: types.CallbackQuery, state: FSMContext):
     """Пользователь хочет написать что чувствует."""
     if not await _verify_crisis_mode(callback):
@@ -188,7 +205,7 @@ async def handle_talk(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-@router.callback_query(F.data == "crisis_just_be")
+@router.callback_query(CrisisCallback.filter(F.action == "just_be"))
 async def handle_just_be(callback: types.CallbackQuery, state: FSMContext):
     """Пользователь хочет просто побыть."""
     if not await _verify_crisis_mode(callback):
@@ -252,7 +269,9 @@ async def handle_just_being_message(message: types.Message, state: FSMContext):
 # ============== Дыхательные техники ==============
 
 
-@router.callback_query(CrisisStates.breathing, F.data == "breathe_478")
+@router.callback_query(
+    CrisisStates.breathing, CrisisCallback.filter(F.action == "b478")
+)
 async def start_breathing_478(callback: types.CallbackQuery, state: FSMContext):
     """Запуск техники 4-7-8."""
     await state.update_data(breathing_technique="478")
@@ -261,7 +280,9 @@ async def start_breathing_478(callback: types.CallbackQuery, state: FSMContext):
     await run_breathing_478(callback.message, state)
 
 
-@router.callback_query(CrisisStates.breathing, F.data == "breathe_box")
+@router.callback_query(
+    CrisisStates.breathing, CrisisCallback.filter(F.action == "bbox")
+)
 async def start_breathing_box(callback: types.CallbackQuery, state: FSMContext):
     """Запуск Box Breathing 4-4-4-4."""
     await state.update_data(breathing_technique="box")
@@ -336,7 +357,9 @@ async def run_breathing_box(message: types.Message, state: FSMContext):
     )
 
 
-@router.callback_query(CrisisStates.breathing, F.data == "breathe_repeat")
+@router.callback_query(
+    CrisisStates.breathing, CrisisCallback.filter(F.action == "brep")
+)
 async def repeat_breathing(callback: types.CallbackQuery, state: FSMContext):
     """Повторение дыхательной техники."""
     data = await state.get_data()
@@ -351,7 +374,9 @@ async def repeat_breathing(callback: types.CallbackQuery, state: FSMContext):
         await run_breathing_478(callback.message, state)
 
 
-@router.callback_query(CrisisStates.breathing, F.data == "breathe_done")
+@router.callback_query(
+    CrisisStates.breathing, CrisisCallback.filter(F.action == "bdone")
+)
 async def breathing_done(callback: types.CallbackQuery, state: FSMContext):
     """Пользователь закончил дышать — предлагаем микро-действие."""
     mantra = get_random_mantra("breathing")
@@ -369,7 +394,7 @@ async def breathing_done(callback: types.CallbackQuery, state: FSMContext):
 # ============== Микро-действие ==============
 
 
-@router.callback_query(F.data == "crisis_micro_action")
+@router.callback_query(CrisisCallback.filter(F.action == "micro"))
 async def offer_micro_action(callback: types.CallbackQuery, state: FSMContext):
     """Предложение микро-действия."""
     user = await User.get_or_none(telegram_id=callback.from_user.id)
@@ -421,7 +446,9 @@ async def offer_micro_action(callback: types.CallbackQuery, state: FSMContext):
 
 
 # Обработчики кнопок микро-действия (доступны только в состоянии micro_action)
-@router.callback_query(CrisisStates.micro_action, F.data == "micro_try")
+@router.callback_query(
+    CrisisStates.micro_action, CrisisCallback.filter(F.action == "mtry")
+)
 async def micro_action_try(callback: types.CallbackQuery, state: FSMContext):
     """Пользователь хочет попробовать микро-действие."""
     try:
@@ -439,7 +466,9 @@ async def micro_action_try(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-@router.callback_query(CrisisStates.micro_action, F.data == "micro_skip")
+@router.callback_query(
+    CrisisStates.micro_action, CrisisCallback.filter(F.action == "mskip")
+)
 async def micro_action_skip(callback: types.CallbackQuery, state: FSMContext):
     """Пользователь не хочет делать микро-действие."""
     # Отправляем GIF отдыха
@@ -520,7 +549,7 @@ async def cmd_normal(message: types.Message, state: FSMContext):
     )
 
 
-@router.callback_query(F.data == "crisis_exit_yes")
+@router.callback_query(CrisisCallback.filter(F.action == "exit_y"))
 async def confirm_exit_crisis(callback: types.CallbackQuery, state: FSMContext):
     """Подтверждение выхода из режима кризиса."""
     user = await User.get_or_none(telegram_id=callback.from_user.id)
@@ -543,7 +572,7 @@ async def confirm_exit_crisis(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-@router.callback_query(F.data == "crisis_exit_no")
+@router.callback_query(CrisisCallback.filter(F.action == "exit_n"))
 async def cancel_exit_crisis(callback: types.CallbackQuery, state: FSMContext):
     """Отмена выхода из режима кризиса."""
     await callback.message.edit_text(

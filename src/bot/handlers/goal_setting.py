@@ -6,6 +6,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from src.database.models import User, Goal
 from src.bot.states import GoalSettingStates
+from src.bot.callbacks import MenuCallback
 from src.services.ai import ai_service
 from src.services.vision import (
     download_telegram_photo,
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 def get_back_to_menu_keyboard():
     """Кнопка возврата в меню."""
     builder = InlineKeyboardBuilder()
-    builder.button(text="📋 Меню", callback_data="back_to_menu")
+    builder.button(text="📋 Меню", callback_data=MenuCallback(action="back"))
     return builder.as_markup()
 
 
@@ -158,7 +159,7 @@ async def finalize_goal(
     await message.answer(ai_response)
     await message.answer(
         f"✅ Цель «{title}» успешно сохранена!",
-        reply_markup=get_back_to_menu_keyboard()
+        reply_markup=get_back_to_menu_keyboard(),
     )
 
     await state.clear()
