@@ -17,6 +17,13 @@ router = Router()
 logger = logging.getLogger(__name__)
 
 
+def get_back_to_menu_keyboard():
+    """Кнопка возврата в меню."""
+    builder = InlineKeyboardBuilder()
+    builder.button(text="📋 Меню", callback_data="back_to_menu")
+    return builder.as_markup()
+
+
 @router.message(Command("checkin"))
 async def cmd_checkin(message: types.Message, state: FSMContext):
     """Start check-in process by listing active goals."""
@@ -203,6 +210,9 @@ async def process_report(message: types.Message, state: FSMContext):
     except Exception:
         pass  # Ignore deletion errors to ensure state is cleared
 
-    await message.answer(f"Записано! ✅\n\n{ai_feedback}")
+    await message.answer(
+        f"✅ Записано!\n\n{ai_feedback}",
+        reply_markup=get_back_to_menu_keyboard()
+    )
 
     await state.clear()

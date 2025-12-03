@@ -44,6 +44,15 @@ EXIT_MANTRAS = [
     "Ты сильнее, чем кажется.",
 ]
 
+# Мантры для режима рефлексии
+REFLECT_MANTRAS = [
+    "Осознанность — первый шаг к изменению.",
+    "Ты уже на пути, раз задаёшь себе эти вопросы.",
+    "Каждый ответ — шаг к себе настоящему.",
+    "Нет правильных ответов, есть честные.",
+    "Рефлексия — это забота о себе.",
+]
+
 
 def get_random_mantra(category: str = "crisis") -> str:
     """
@@ -60,6 +69,7 @@ def get_random_mantra(category: str = "crisis") -> str:
         "breathing": BREATHING_MANTRAS,
         "micro_action": MICRO_ACTION_MANTRAS,
         "exit": EXIT_MANTRAS,
+        "reflect": REFLECT_MANTRAS,
     }
     
     category_mantras = mantras.get(category, CRISIS_MANTRAS)

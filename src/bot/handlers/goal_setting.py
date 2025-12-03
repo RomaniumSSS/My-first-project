@@ -2,6 +2,7 @@ import logging
 from aiogram import Router, types, F
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from src.database.models import User, Goal
 from src.bot.states import GoalSettingStates
@@ -14,6 +15,13 @@ from src.services.vision import (
 
 router = Router()
 logger = logging.getLogger(__name__)
+
+
+def get_back_to_menu_keyboard():
+    """Кнопка возврата в меню."""
+    builder = InlineKeyboardBuilder()
+    builder.button(text="📋 Меню", callback_data="back_to_menu")
+    return builder.as_markup()
 
 
 @router.message(Command("new_goal"))
@@ -148,6 +156,9 @@ async def finalize_goal(
         pass  # Ignore deletion errors
 
     await message.answer(ai_response)
-    await message.answer(f"Цель '{title}' успешно сохранена!")
+    await message.answer(
+        f"✅ Цель «{title}» успешно сохранена!",
+        reply_markup=get_back_to_menu_keyboard()
+    )
 
     await state.clear()

@@ -4,46 +4,46 @@ import sys
 from typing import Callable, Dict, Any, Awaitable
 
 from aiogram import Bot, Dispatcher, BaseMiddleware
-from aiogram.types import Message, TelegramObject, CallbackQuery
+from aiogram.types import Message, TelegramObject, CallbackQuery, BotCommand
 from aiogram.fsm.storage.memory import MemoryStorage
 from tortoise import Tortoise
 
 from src.config import config
 from src.database.config import TORTOISE_ORM
-from src.bot.handlers import start, onboarding, goal_setting, checkin, crisis
+from src.bot.handlers import start, onboarding, goal_setting, checkin, crisis, reflect
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler("bot.log"),
-        logging.StreamHandler(sys.stdout)
-    ]
+    handlers=[logging.FileHandler("bot.log"), logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger(__name__)
 
 
 class WhitelistMiddleware(BaseMiddleware):
     """Middleware to restrict access to allowed users only."""
+
     async def __call__(
         self,
         handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
         event: TelegramObject,
-        data: Dict[str, Any]
+        data: Dict[str, Any],
     ) -> Any:
         user = data.get("event_from_user")
         if user and config.ALLOWED_USER_IDS:
             if user.id not in config.ALLOWED_USER_IDS:
-                logger.warning(f"Unauthorized access attempt from user {user.id} (@{user.username})")
-                # We can silently ignore or send a message. 
+                logger.warning(
+                    f"Unauthorized access attempt from user {user.id} (@{user.username})"
+                )
+                # We can silently ignore or send a message.
                 # For messages, we can reply.
                 if isinstance(event, Message):
                     await event.answer("🔒 Access denied. This bot is in closed Alpha.")
                 elif isinstance(event, CallbackQuery):
                     await event.answer("🔒 Access denied.", show_alert=True)
                 return
-        
+
         return await handler(event, data)
 
 
@@ -52,6 +52,21 @@ async def init_db():
     await Tortoise.init(config=TORTOISE_ORM)
     # Safe to run, but usually handled by Aerich
     await Tortoise.generate_schemas(safe=True)
+
+
+async def set_bot_commands(bot: Bot):
+    """Устанавливает команды бота в меню Telegram."""
+    commands = [
+        BotCommand(command="start", description="🚀 Начать / Перезапустить"),
+        BotCommand(command="menu", description="📋 Главное меню"),
+        BotCommand(command="new_goal", description="🎯 Поставить новую цель"),
+        BotCommand(command="checkin", description="✅ Отчитаться о прогрессе"),
+        BotCommand(command="reflect", description="🧘 Сессия рефлексии"),
+        BotCommand(command="crisis", description="🆘 Режим кризиса"),
+        BotCommand(command="normal", description="🔄 Выйти из режима кризиса"),
+    ]
+    await bot.set_my_commands(commands)
+    logger.info("Bot commands menu set up")
 
 
 async def main():
@@ -72,9 +87,13 @@ async def main():
     dp.include_router(goal_setting.router)
     dp.include_router(checkin.router)
     dp.include_router(crisis.router)
+    dp.include_router(reflect.router)
 
     # Database setup
     await init_db()
+
+    # Setup bot commands menu
+    await set_bot_commands(bot)
 
     logger.info("Starting bot...")
     try:

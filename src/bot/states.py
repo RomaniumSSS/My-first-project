@@ -24,3 +24,19 @@ class CrisisStates(StatesGroup):
     micro_action = State()           # Предложение микро-действия
     just_being = State()             # Просто рядом, без действий
     waiting_for_micro_report = State()  # Ожидание отчёта о микро-действии
+
+
+class ReflectStates(StatesGroup):
+    """
+    FSM состояния для глубокого поддерживающего диалога /reflect.
+    MVP: 7 вопросов → LLM анализ → рекомендации.
+    """
+    q1_feeling = State()       # Как ты себя чувствуешь?
+    q2_scale = State()         # Оценка 1-10
+    q3_change = State()        # Что хочешь изменить?
+    q4_obstacle = State()      # Что мешает?
+    q5_last_success = State()  # Когда последний раз получалось?
+    q6_what_helped = State()   # Что помогло тогда?
+    q7_one_step = State()      # Какой маленький шаг можешь сделать?
+    processing = State()       # LLM обработка
+    post_reflect = State()     # После рекомендаций (дыхание/цель)
