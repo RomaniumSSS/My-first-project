@@ -8,6 +8,7 @@ from src.bot.states import CheckInStates
 from src.bot.callbacks import MenuCallback, CheckinCallback
 from src.database.models import Goal, CheckIn, User
 from src.services.ai import ai_service
+from src.services.gif_service import gif_service
 from src.services.vision import (
     download_telegram_photo,
     encode_image_to_base64,
@@ -208,8 +209,13 @@ async def process_report(message: types.Message, state: FSMContext):
     except Exception:
         pass  # Ignore deletion errors to ensure state is cleared
 
-    await message.answer(
-        f"✅ Записано!\n\n{ai_feedback}", reply_markup=get_back_to_menu_keyboard()
+    await message.answer(f"✅ Записано!\n\n{ai_feedback}")
+    
+    # Отправляем GIF по настроению (чек-ин = маленькая победа)
+    await gif_service.send_mood_gif(
+        message,
+        context="Пользователь выполнил чек-ин, отчитался о прогрессе по цели",
+        mood_text=report_text
     )
 
     await state.clear()

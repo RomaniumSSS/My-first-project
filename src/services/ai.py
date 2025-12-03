@@ -67,6 +67,73 @@ class AIService:
             # Fallback as per plan
             return "Мозг коуча сейчас перезагружается, попробуй позже."
 
+    async def choose_gif_category(self, context: str, mood: str = None) -> str:
+        """
+        Выбирает категорию GIF на основе контекста и настроения пользователя.
+
+        Категории:
+        - support: поддержка, обнимашки (когда грустно, тяжело)
+        - breathe: спокойствие, природа (после дыхания, медитации)
+        - celebration_small: маленькие победы (чек-ин выполнен, шаг сделан)
+        - you_got_this: мотивация (нейтральное/позитивное завершение)
+        - rest: отдых (пользователь устал, не хочет ничего делать)
+
+        Returns:
+            Название категории GIF
+        """
+        prompt = f"""На основе контекста и настроения выбери ОДНУ категорию GIF для отправки пользователю.
+
+Контекст: {context}
+{f"Настроение/ответы пользователя: {mood}" if mood else ""}
+
+Категории:
+- support — когда человеку плохо, грустно, нужна поддержка
+- breathe — после дыхательных практик, медитации, расслабления
+- celebration_small — маленькая победа, что-то сделано, прогресс
+- you_got_this — нейтральное/позитивное завершение, мотивация
+- rest — устал, нужен отдых, "не сейчас"
+
+Ответь ТОЛЬКО одним словом — названием категории."""
+
+        try:
+            response = await self._make_request(
+                [{"role": "user", "content": prompt}], temperature=0.3, max_tokens=20
+            )
+
+            category = response.strip().lower()
+            valid_categories = {
+                "support",
+                "breathe",
+                "celebration_small",
+                "you_got_this",
+                "rest",
+            }
+
+            if category not in valid_categories:
+                logger.warning(
+                    f"LLM returned invalid category: {category}, "
+                    f"falling back to you_got_this"
+                )
+                return "you_got_this"
+
+            return category
+
+        except Exception as e:
+            logger.warning(f"Failed to get GIF category from LLM: {e}")
+            # Простой fallback на основе ключевых слов
+            context_lower = context.lower()
+            if any(w in context_lower for w in ["кризис", "плохо", "тяжело", "грустн"]):
+                return "support"
+            elif any(w in context_lower for w in ["дыхан", "выдох", "вдох"]):
+                return "breathe"
+            elif any(
+                w in context_lower for w in ["сделал", "чек-ин", "отчет", "готово"]
+            ):
+                return "celebration_small"
+            elif any(w in context_lower for w in ["отдых", "устал", "не сейчас"]):
+                return "rest"
+            return "you_got_this"
+
 
 # Singleton instance
 ai_service = AIService()

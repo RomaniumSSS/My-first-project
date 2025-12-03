@@ -20,14 +20,12 @@ router = Router()
 
 
 def get_persistent_menu():
-    """Постоянная Reply клавиатура с меню."""
+    """
+    Минималистичная Reply-клавиатура — только кнопка Меню.
+    Остальные действия доступны через inline-меню по нажатию.
+    """
     builder = ReplyKeyboardBuilder()
     builder.button(text="📋 Меню")
-    builder.button(text="🎯 Новая цель")
-    builder.button(text="✅ Чек-ин")
-    builder.button(text="🧘 Рефлексия")
-    builder.button(text="🆘 Кризис")
-    builder.adjust(1, 4)  # Меню на первой строке, остальные на второй
     return builder.as_markup(resize_keyboard=True, is_persistent=True)
 
 
@@ -83,7 +81,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
             reply_markup=get_persistent_menu(),
         )
         await message.answer(
-            "Или выбери из меню:", reply_markup=get_main_menu_keyboard(has_goals)
+            "Выбери действие:", reply_markup=get_main_menu_keyboard(has_goals)
         )
 
 
@@ -112,50 +110,13 @@ async def cmd_menu(message: types.Message, state: FSMContext):
     )
 
 
-# ============== Обработка текстовых кнопок меню ==============
+# ============== Обработка текстовой кнопки "Меню" ==============
 
 
 @router.message(F.text == "📋 Меню")
 async def handle_menu_button(message: types.Message, state: FSMContext):
     """Обработка нажатия кнопки Меню."""
     await cmd_menu(message, state)
-
-
-@router.message(F.text == "🎯 Новая цель")
-async def handle_new_goal_button(message: types.Message, state: FSMContext):
-    """Обработка кнопки Новая цель."""
-    user = await User.get_or_none(telegram_id=message.from_user.id)
-    if not user:
-        await message.answer("Сначала нужно познакомиться! Нажми /start")
-        return
-
-    await state.clear()
-    await message.answer("Давай поставим новую цель! Как она звучит? (Заголовок)")
-    await state.set_state(GoalSettingStates.waiting_for_title)
-
-
-@router.message(F.text == "✅ Чек-ин")
-async def handle_checkin_button(message: types.Message, state: FSMContext):
-    """Обработка кнопки Чек-ин."""
-    from src.bot.handlers.checkin import cmd_checkin
-
-    await cmd_checkin(message, state)
-
-
-@router.message(F.text == "🧘 Рефлексия")
-async def handle_reflect_button(message: types.Message, state: FSMContext):
-    """Обработка кнопки Рефлексия."""
-    from src.bot.handlers.reflect import cmd_reflect
-
-    await cmd_reflect(message, state)
-
-
-@router.message(F.text == "🆘 Кризис")
-async def handle_crisis_button(message: types.Message, state: FSMContext):
-    """Обработка кнопки Кризис."""
-    from src.bot.handlers.crisis import cmd_crisis
-
-    await cmd_crisis(message, state)
 
 
 # ============== Обработка inline-кнопок меню ==============

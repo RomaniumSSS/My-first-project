@@ -23,6 +23,7 @@ from src.bot.states import ReflectStates
 from src.bot.callbacks import MenuCallback, ReflectCallback
 from src.database.models import User
 from src.services.ai import ai_service
+from src.services.gif_service import gif_service
 from src.data.mantras import get_random_mantra
 
 router = Router()
@@ -490,7 +491,6 @@ async def handle_save_step(callback: types.CallbackQuery, state: FSMContext):
     """
     Записать шаг как микро-цель.
     AICODE-TODO: В будущем интегрировать с Goal моделью.
-    Пока просто показываем что шаг записан.
     """
     data = await state.get_data()
     answers = data.get("reflect_answers", {})
@@ -500,12 +500,18 @@ async def handle_save_step(callback: types.CallbackQuery, state: FSMContext):
         await callback.message.edit_text(
             f"🎯 *Твой шаг на сегодня:*\n\n" f"_{step}_\n\n" "Я верю в тебя! 💪",
             parse_mode="Markdown",
-            reply_markup=get_back_to_menu_keyboard(),
+            reply_markup=None,
+        )
+        # GIF мотивации
+        await gif_service.send_mood_gif(
+            callback.message,
+            context="Пользователь записал свой шаг на сегодня, мотивация",
+            mood_text=step
         )
     else:
         await callback.message.edit_text(
             "🎯 Напиши свой шаг — что ты сделаешь сегодня?",
-            reply_markup=get_back_to_menu_keyboard(),
+            reply_markup=None,
         )
 
     await state.clear()
@@ -516,12 +522,29 @@ async def handle_save_step(callback: types.CallbackQuery, state: FSMContext):
     ReflectStates.post_reflect, ReflectCallback.filter(F.action == "done")
 )
 async def handle_done(callback: types.CallbackQuery, state: FSMContext):
-    """Завершение сессии."""
+    """Завершение сессии рефлексии с GIF по настроению."""
+    data = await state.get_data()
+    answers = data.get("reflect_answers", {})
+    
+    # Собираем настроение из ответов для LLM
+    mood_text = " ".join(
+        str(v) for v in answers.values() 
+        if v and v != "(пропущено)"
+    )
+    
     mantra = get_random_mantra("exit")
     await callback.message.edit_text(
         f"✅ Сессия завершена.\n\n" f"_{mantra}_\n\n" "Возвращайся когда захочешь!",
         parse_mode="Markdown",
-        reply_markup=get_back_to_menu_keyboard(),
+        reply_markup=None,
     )
+    
+    # Отправляем GIF на основе настроения
+    await gif_service.send_mood_gif(
+        callback.message,
+        context="Пользователь завершил сессию рефлексии",
+        mood_text=mood_text
+    )
+    
     await state.clear()
     await callback.answer()

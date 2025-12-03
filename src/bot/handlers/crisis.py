@@ -551,7 +551,7 @@ async def cmd_normal(message: types.Message, state: FSMContext):
 
 @router.callback_query(CrisisCallback.filter(F.action == "exit_y"))
 async def confirm_exit_crisis(callback: types.CallbackQuery, state: FSMContext):
-    """Подтверждение выхода из режима кризиса."""
+    """Подтверждение выхода из режима кризиса с GIF."""
     user = await User.get_or_none(telegram_id=callback.from_user.id)
 
     if user:
@@ -568,6 +568,14 @@ async def confirm_exit_crisis(callback: types.CallbackQuery, state: FSMContext):
         parse_mode="Markdown",
         reply_markup=None,
     )
+
+    # GIF мотивации — пользователь выходит из кризиса
+    await gif_service.send_mood_gif(
+        callback.message,
+        context="Пользователь выходит из режима кризиса, "
+        "чувствует себя лучше, мотивация",
+    )
+
     await state.clear()
     await callback.answer()
 
